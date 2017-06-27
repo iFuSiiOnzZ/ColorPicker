@@ -11,6 +11,11 @@ typedef struct offscreen_buffer_t
     int BytesPerPixel;
 } offscreen_buffer_t;
 
+typedef struct color_t
+{
+    unsigned int r, g, b, a;
+} color_t;
+
 struct CGraphicsManager
 {
     static void DrawRectangle(offscreen_buffer_t *Buffer, float sx, float sy, float ex, float ey, float r, float g, float b);

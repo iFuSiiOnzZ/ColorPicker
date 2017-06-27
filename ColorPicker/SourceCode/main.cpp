@@ -5,6 +5,8 @@
 
 #include "graphics\graphics.h"
 #include "graphics\text.h"
+
+#include "colors.h"
 #include "utils.h"
 
 /*
@@ -31,8 +33,8 @@
     #define IsDown(x) (GetAsyncKeyState(x) & 0x8000)
 #endif
 
-#define WINDOW_NAME "Fractals"
-#define CLASS_NAME  "Fractals"
+#define WINDOW_NAME "Color Picker"
+#define CLASS_NAME  "Color Picker"
 
 #define WINDOW_WIDTH    1366
 #define WINDOW_HEIGHT   768
@@ -57,26 +59,10 @@ typedef struct  window_dimensions_t
     int Height;
 } window_dimensions_t;
 
-typedef struct color_save_t
-{
-    int r, g, b;
-} color_save_t;
 ///////////////////////////////////////////////////////////////////////////////
 
 static win32_offscreen_buffer_t GlobalBackBuffer = { 0 };
 static bool GlobalExit = false;
-
-extern int r[256] = { 0 };
-extern int g[256] = { 0 };
-extern int b[256] = { 0 };
-
-void GenerateColors()
-{
-    for (int i = 0; i < 256; ++i)
-    {
-        r[i] = (i >> 5) * 36, g[i] = (i >> 3 & 7) * 36, b[i] = (i & 3) * 85;
-    }
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -134,30 +120,6 @@ static void DisplayBuffer(win32_offscreen_buffer_t *Buffer, HDC DeviceContext, i
         Buffer->Memory, &Buffer->Info,
         DIB_RGB_COLORS, SRCCOPY
     );
-}
-
-POINT mouse_pos(HWND hWnd)
-{
-    POINT mouse_pos;
-    GetCursorPos(&mouse_pos);
-    
-    ScreenToClient(hWnd, &mouse_pos);
-    return mouse_pos;
-}
-
-static float lerp(float v0, float v1, float t)
-{
-    return (1 - t) * v0 + t * v1;
-}
-
-static float seconds_now()
-{
-    static LARGE_INTEGER s_frequency = { 0 };
-    static BOOL s_use_qpc = QueryPerformanceFrequency(&s_frequency);
-
-    LARGE_INTEGER now = { 0 };
-    QueryPerformanceCounter(&now);
-    return (float) ((double)now.QuadPart / (double)s_frequency.QuadPart);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT hMsg, WPARAM wParam, LPARAM lParam)
@@ -240,7 +202,7 @@ int WINAPI WinMain(HINSTANCE hActualInst, HINSTANCE hPrevInst, LPSTR cmdLine, in
     HDC DeviceContext = GetDC(hWnd);
     SetBkMode(DeviceContext, TRANSPARENT);
 
-    std::vector<color_save_t> ChosenColors;
+    CUserColors PickedColors;
     MSG hMsg = { 0 };
 
     while (!GlobalExit)
@@ -263,53 +225,26 @@ int WINAPI WinMain(HINSTANCE hActualInst, HINSTANCE hPrevInst, LPSTR cmdLine, in
 
         POINT cursor = { 0 };
         GetCursorPos(&cursor);
-        COLORREF _color = GetPixel(GetDC(NULL), cursor.x, cursor.y);
 
-        int r = GetRValue(_color);
-        int g = GetGValue(_color);
-        int b = GetBValue(_color);
+        unsigned int CurrentColor = GetPixel(GetDC(NULL), cursor.x, cursor.y);
+        int r = GetRValue(CurrentColor), g = GetGValue(CurrentColor), b = GetBValue(CurrentColor);
 
         if (IsDown(VK_CONTROL) && WasDown('Z'))
         {
-            if (ChosenColors.size())
-            {
-                ChosenColors.erase(ChosenColors.begin() + (ChosenColors.size() - 1));
-            }
+            PickedColors.popColor();
         }
         else if (IsDown(VK_CONTROL) && WasDown('S'))
         {
-            color_save_t c = { 0 };
-            c.r = r; c.g = g; c.b = b;
-
-            ChosenColors.push_back(c);
+            PickedColors.pushColor(r, g, b);
         }
         else if (IsDown(VK_CONTROL) && WasDown('C'))
         {
-            ChosenColors.clear();
+            PickedColors.clear();
         }
 
         GraphicsManager.ClearBuffer(&DrawBuffer, r / 255.0f, g / 255.0f, b / 255.0f);
-
-        for (size_t i = 0; i < ChosenColors.size(); ++i)
-        {
-            float r = ChosenColors[i].r / 255.0f;
-            float g = ChosenColors[i].g / 255.0f;
-            float b = ChosenColors[i].b / 255.0f;
-
-            float wr = ( (float)WndDimensions.Width /  (float)WINDOW_WIDTH);
-            float hr = ((float)WndDimensions.Height / (float)WINDOW_HEIGHT);
-
-            float w = 300.0f * wr;
-            float h = ((float)WndDimensions.Height / (float)ChosenColors.size());
-
-            float sx = WndDimensions.Width - w - 10.0f;
-            float sy = i * h + 10.0f;
-
-            float ex = WndDimensions.Width - 10.0f;
-            float ey = i * h + h - 10.0f;
-
-            GraphicsManager.DrawRectangle(&DrawBuffer, sx, sy, ex, ey, r, g, b);
-        }
+        PickedColors.showColors(&DrawBuffer, &GraphicsManager, (float)WndDimensions.Width, (float)WndDimensions.Height);
+        
 
         DisplayBuffer(&GlobalBackBuffer, DeviceContext, WndDimensions.Width, WndDimensions.Height);
 

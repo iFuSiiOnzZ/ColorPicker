@@ -162,6 +162,7 @@
     <ClCompile Include="SourceCode\graphics\text.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="SourceCode\colors.h" />
     <ClInclude Include="SourceCode\graphics\graphics.h" />
     <ClInclude Include="SourceCode\graphics\text.h" />
     <ClInclude Include="SourceCode\utils.h" />

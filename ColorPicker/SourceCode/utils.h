@@ -1,13 +1,6 @@
 #pragma once
 
 #include <string>
-#include <Windows.h>
-
-typedef struct file_in_memory
-{
-    void *Memory;
-    size_t Size;
-} file_in_memory;
 
 struct CUtils
 {
@@ -35,32 +28,3 @@ struct CUtils
     }
 };
 
-struct CFileUtils
-{
-    static file_in_memory GetFileContent(const char * FileName)
-    {
-        file_in_memory f = { 0 };
-        struct stat st = { 0 };
-        FILE *pFile = NULL;
-
-        if (!stat((const char *)FileName, &st) && !fopen_s(&pFile, (const char *)FileName, "rb"))
-        {
-            f.Size = st.st_size;
-            f.Memory = malloc(f.Size);
-
-            fread(f.Memory, f.Size, 1, pFile);
-            fclose(pFile);
-        }
-
-        return f;
-    }
-
-    static void ReleaseFileContent(file_in_memory * File)
-    {
-        if (!File->Size) return;
-        File->Size = 0;
-
-        free(File->Memory);
-        File->Memory = NULL;
-    }
-};

@@ -35,5 +35,8 @@
     <ClInclude Include="SourceCode\utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SourceCode\colors.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
